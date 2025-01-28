@@ -111,11 +111,77 @@ def eda():
         st.plotly_chart(fig, use_container_width=True)
 
 
-# Main App Controller
+def modeling():
+    st.title("Air Quality Prediction Model")
+    
+    st.subheader("Model Configuration")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        target = st.selectbox("Select Target Variable", df.columns)
+        features = st.multiselect("Select Features", df.columns.drop(target))
+    
+    with col2:
+        test_size = st.slider("Test Set Size", 0.1, 0.5, 0.2)
+        n_estimators = st.slider("Number of Trees", 10, 200, 100)
+        max_depth = st.slider("Max Depth", 2, 50, 20)
+    
+    if st.button("Train Model"):
+        if not features:
+            st.error("Please select at least one feature!")
+            return
+            
+        X = df[features]
+        y = df[target]
+        
+        # Train-test split
+        split_idx = int(len(X) * (1 - test_size))
+        X_train, X_test = X[:split_idx], X[split_idx:]
+        y_train, y_test = y[:split_idx], y[split_idx:]
+        
+        # Scaling
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+        
+        # Model training
+        model = RandomForestRegressor(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            random_state=42
+        )
+        model.fit(X_train, y_train)
+        
+        # Evaluation
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        
+        # Display results
+        st.subheader("Model Performance")
+        col1, col2 = st.columns(2)
+        col1.metric("Mean Squared Error", f"{mse:.2f}")
+        col2.metric("R² Score", f"{r2:.2f}")
+        
+        # Feature importance
+        st.subheader("Feature Importance")
+        importance = pd.DataFrame({
+            'Feature': features,
+            'Importance': model.feature_importances_
+        }).sort_values('Importance', ascending=False)
+        
+        fig = px.bar(
+            importance, 
+            x='Importance', 
+            y='Feature', 
+            orientation='h'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+# Update Main App Controller
 if page == "Data Overview":
     data_overview()
 elif page == "Exploratory Data Analysis":
     eda()
-else:
-    st.write("Not implemented yet!")
-
+elif page == "Modeling & Prediction":
+    modeling()
