@@ -64,9 +64,58 @@ def data_overview():
     })
     st.table(col_info)
 
+def eda():
+    st.title("Exploratory Data Analysis")
+    
+    tab1, tab2, tab3 = st.tabs([
+        "Univariate Analysis", 
+        "Bivariate Analysis", 
+        "Time Series Analysis"
+    ])
+    
+    with tab1:
+        st.subheader("Univariate Analysis")
+        col = st.selectbox("Select Column", df.columns, key='uni_col')
+        
+        fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+        sns.histplot(df[col], kde=True, ax=ax[0])
+        ax[0].set_title(f"Distribution of {col}")
+        sns.boxplot(x=df[col], ax=ax[1])
+        ax[1].set_title(f"Boxplot of {col}")
+        st.pyplot(fig)
+    
+    with tab2:
+        st.subheader("Bivariate Analysis")
+        col1 = st.selectbox("X-axis", df.columns, key='x_axis')
+        col2 = st.selectbox("Y-axis", df.columns, key='y_axis')
+        
+        fig = px.scatter(
+            df, x=col1, y=col2, 
+            trendline="ols",
+            title=f"{col1} vs {col2}"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with tab3:
+        st.subheader("Time Series Analysis")
+        ts_col = st.selectbox("Select Metric", df.columns, key='ts_col')
+        resample_freq = st.selectbox("Select Frequency", 
+                                   ['D', 'W', 'M', 'Q', 'Y'], 
+                                   index=2)
+        
+        ts_data = df[ts_col].resample(resample_freq).mean()
+        fig = px.line(
+            ts_data, 
+            title=f"{ts_col} Over Time ({resample_freq} frequency)"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+
 # Main App Controller
 if page == "Data Overview":
     data_overview()
+elif page == "Exploratory Data Analysis":
+    eda()
 else:
     st.write("Not implemented yet!")
 
